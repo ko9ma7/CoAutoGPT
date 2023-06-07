@@ -48,20 +48,21 @@ namespace CollaborativeChatGPTLibrary.Classes
         //string isRemovalText = "Is the phrase '@INPUT' requesting the 'removal' of item? You should only return 'yes' or 'no' for your responese and no explanation.";//
         //const string memoryManagermDefinition = "[role]: you are an agent that can search a list of texts returning the items that are related to the topic.  [Topic]: cars.  [List of texts]: [@ITEMS]";
         //with only the important information
+        
+        //Future feature
         string criticDefinition = "";
 
         public int ApiCallCount { get; set; }
 
         public List<APICallEvent> OpenAIApiCallCount { get; set; } = new List<APICallEvent>();
 
-        public int MaxStepsForEnrichmentStage { get; set; } = 230;
+        public int MaxStepsForEnrichmentStage { get; set; } = 10;
 
         public Dictionary<PromptTypeEnum, Prompt> AgentPromptBase { get; set; }
 
         [field: NonSerialized]
         public Model ChatGPTModelType { get; set; }
 
-        //public string ExpertSystemDefinition { get; set; }
 
         public string ExpertBasePrompt { get; set; }
 
@@ -70,13 +71,10 @@ namespace CollaborativeChatGPTLibrary.Classes
 
         Dictionary<RoleEnum, string> conversationTexts = null;
 
-        //public Dictionary<string, Agent> Agents {  get; set; }
         [field: NonSerialized]
         public Dictionary<RoleEnum, Conversation> AgentConversations { get; set; }
 
         public List<AgentTask> CompletedTasks { get; set; } = new List<AgentTask>();
-
-        //public StackList<AgentTask> AgentTasks { get; set; }
 
         public Tree<AgentTask> AgentTaskTree { get; set; }
 
@@ -90,14 +88,7 @@ namespace CollaborativeChatGPTLibrary.Classes
 
         public ReflectiveAgent(string openAiApiKey, Model model)
         {
-            //OPENAIAPI_KEY = openAiApiKey;
-
             api = new OpenAIAPI(openAiApiKey);
-
-            //AgentTasks = new StackList<AgentTask>();
-
-            //Agents = new Dictionary<string, Agent>();
-            //Model.GPT4_32k_Context
             ChatGPTModelType = model;
 
             AgentConversations = new Dictionary<RoleEnum, Conversation>();
@@ -181,7 +172,6 @@ namespace CollaborativeChatGPTLibrary.Classes
                 Value = isDoneText
             });
 
-            //var test = IncreaseLastDigitIndex("2.3.0");
         }
 
         public bool AllTasksComplete()
@@ -223,11 +213,6 @@ namespace CollaborativeChatGPTLibrary.Classes
                         break;
                     }    
 
-                    //if (parent.Data.Section.Equals("root"))
-                    //{
-                    //    return result;
-                    //}
-
                     continue;
                 }
                 else
@@ -235,39 +220,11 @@ namespace CollaborativeChatGPTLibrary.Classes
                     break;
                 }
 
-                //foreach(TreeNode<AgentTask> node in childrenNodes)
                 
             }
             
 
             return result;
-        }
-
-        public void InitializeOpenAIApi(string openAiApiKey, Model model)
-        {
-            api = new OpenAIAPI(openAiApiKey);
-
-            ChatGPTModelType = model;
-
-            AgentConversations = new Dictionary<RoleEnum, Conversation>();
-        }
-
-        public string IncreaseLastDigitIndex(string sectionFormat)
-        {
-            // Use regular expression to find the last digit in each section
-            Regex regex = new Regex(@"\d+(?=\D*$)");
-            MatchCollection matches = regex.Matches(sectionFormat);
-
-            // If a match is found, increment the last digit index by 1
-            if (matches.Count > 0)
-            {
-                Match lastMatch = matches[matches.Count - 1];
-                int lastDigit = int.Parse(lastMatch.Value);
-                string updatedLastDigit = (lastDigit + 1).ToString();
-                sectionFormat = sectionFormat.Remove(lastMatch.Index, lastMatch.Length).Insert(lastMatch.Index, updatedLastDigit);
-            }
-
-            return sectionFormat;
         }
 
         static List<ConversationMessage> GetNodeToStrings(TreeNode<AgentTask> parent)
@@ -304,37 +261,6 @@ namespace CollaborativeChatGPTLibrary.Classes
             expertConversation.AppendSystemMessage(expertQuestionAnswer);
             promptGeneratorConversation.AppendSystemMessage(promptGeneratorSystemMessage );
 
-            //if (!string.IsNullOrEmpty(task.Data.Result))
-            //{
-            //    promptGeneratorConversation.AppendMessage(new ChatMessage()
-            //    {
-            //        Content = task.Data.Result,
-            //        Name = SpeakerEnum.assistant.ToString(),
-            //        Role = ChatMessageRole.FromString(SpeakerEnum.assistant.ToString())
-            //    });
-            //    expertConversation.AppendMessage(new ChatMessage()
-            //    {
-            //        Content = task.Data.Result,
-            //        Name = SpeakerEnum.assistant.ToString(),
-            //        Role = ChatMessageRole.FromString(SpeakerEnum.assistant.ToString())
-            //    });
-            //}
-
-            //foreach (var cursor in parentContexts)
-            //{
-            //    promptGeneratorConversation.AppendMessage(new ChatMessage()
-            //    {
-            //        Content = cursor.Message,
-            //        Name = cursor.Speaker.ToString(),
-            //        Role = ChatMessageRole.FromString("Conversation Context: " + cursor.Speaker.ToString())
-            //    });
-            //    expertConversation.AppendMessage(new ChatMessage()
-            //    {
-            //        Content = cursor.Message,
-            //        Name = cursor.Speaker.ToString(),
-            //        Role = ChatMessageRole.FromString("Conversation Context: " + cursor.Speaker.ToString())
-            //    });
-            //}
 
             foreach (var item in task.Data.ConversationMessages)
             {
@@ -351,14 +277,6 @@ namespace CollaborativeChatGPTLibrary.Classes
                     Role = ChatMessageRole.FromString(item.Speaker.ToString())
                 });
             }
-
-            //foreach (var cursor in task.Data.ConversationMessages)
-            //{
-            //    if (cursor.Speaker == SpeakerEnum.user)
-            //    {
-            //        contextBuilder.AppendLine(cursor.Message);
-            //    }
-            //}
 
             List<string> messageHistory = new List<string>();
             List<string> conversationThread = new List<string>();
@@ -406,11 +324,6 @@ namespace CollaborativeChatGPTLibrary.Classes
                             conversationThread.Add(activePrompt);
                         }
                     }
-
-                    //int actionCount = -1;// GetTaskStepCountEstimate(conversationThread[conversationThread.Count - 1]);
-
-                    //if (conversationThread.Count > 0)
-                    //    actionCount = GetTaskStepCountEstimate(conversationThread[conversationThread.Count - 1]);
 
                     bool isEnd = activeMessage.ToLower().Contains("prompt status: done");
 
@@ -463,8 +376,6 @@ namespace CollaborativeChatGPTLibrary.Classes
                 break;
             }
 
-            //Tree<AgentTask>.InsertChildren(parentNode, new List<TreeNode<AgentTask>>(addedNodes.Values));
-
             if (!parentNode.Data.Section.Equals("root") && parentNode.Children.Count > 0)
             {
                 //Need to merge the trees together
@@ -473,72 +384,6 @@ namespace CollaborativeChatGPTLibrary.Classes
             
 
             return result;
-        }
-
-        public Tree<AgentTask> UpdateTaskTree2(Tree<AgentTask> tree, TreeNode<AgentTask> parentNode, string prompt)
-        {
-            int tryCount = 0;
-            int maxTryCount = 3;
-            Tree<AgentTask> result = null;
-
-            while (true)
-            {
-                string outlineResult = ExecuteSingleChatRequestWithConversation(AgentPromptBase[PromptTypeEnum.PROBLEM_BREAKDOWN].Value, prompt);//Get the last entry as that should be the most refined
-
-                if(outlineResult == null)
-                {
-                    Thread.Sleep(1000);
-                    tryCount++;
-                    continue;
-                }
-
-                Outline outline = JsonConvert.DeserializeObject<Outline>(outlineResult);
-
-                if(outline.sections == null)
-                {
-                    if(tryCount >= maxTryCount)
-                    {
-                        break;
-                    }
-
-                    Thread.Sleep(1000);
-                    tryCount++;
-                    continue; 
-                }
-
-                result = BuildAgentTaskTreeFromOutline(agentTask, outline, parentNode, tree);
-                break;
-            }
-            
-
-            return result;
-        }
-
-        public List<string> CreateTasks(List<string> promptHistory)
-        {
-            List<string> promptTasks = new List<string>();
-
-            if (promptHistory.Count > 0)
-            {
-                string outlineResult = ExecuteSingleChatRequestWithConversation(AgentPromptBase[PromptTypeEnum.PROBLEM_BREAKDOWN].Value, promptHistory[promptHistory.Count - 1]);//Get the last entry as that should be the most refined
-
-                //AgentTaskTree = BuildAgentTaskTreeFromOutline(agentTask, outlineResult, CurrentNode, AgentTaskTree);
-
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine("Prompt Outline:");
-
-                string[] strings = outlineResult.Split("\n");
-                for (int i = 0; i < strings.Length; i++)
-                {
-                    if (!string.IsNullOrEmpty(strings[i]))
-                    {
-                        Console.WriteLine("[" + i + "] " + RemoveNumbersAndSpecialCharactersFromFront(strings[i]));
-                        promptTasks.Add(RemoveNumbersAndSpecialCharactersFromFront(strings[i]));
-                    }
-                }
-            }
-
-            return promptTasks;
         }
 
         public List<TreeNode<AgentTask>> GetNodesById(List<Guid> agentTaskIds, TreeNode<AgentTask> parentNode)
@@ -705,344 +550,6 @@ namespace CollaborativeChatGPTLibrary.Classes
             return result;
         }
 
-        public static string GenerateOutline(List<TreeNode<AgentTask>> agentTasks)
-        {
-            Dictionary<string, string> sectionMapping = new Dictionary<string, string>();
-
-            foreach (TreeNode<AgentTask> task in agentTasks)
-            {
-                if (task.Data.Section.Equals("root"))
-                {
-                    continue;
-                }
-
-                string sectionNumber = task.Data.SectionNumber;
-                string section = task.Data.Section;
-
-                if (!sectionMapping.ContainsKey(sectionNumber))
-                {
-                    sectionMapping[sectionNumber] = section;
-                }
-            }
-
-            string outline = "";
-
-            foreach (var kvp in sectionMapping)
-            {
-                string sectionNumber = kvp.Key;
-                string section = kvp.Value;
-
-                int indentationLevel = -1;// sectionNumber.Split('.').Length - 1;
-
-                string[] sectionNumbers = sectionNumber.Split('.');
-                foreach(var cursor in sectionNumbers)
-                {
-                    if (!string.IsNullOrEmpty(cursor))
-                    {
-                        indentationLevel++;
-                    }
-                }
-
-                string indentation = new string('\t', indentationLevel);
-
-                if (!string.IsNullOrEmpty(outline) && indentationLevel == 0)
-                {
-                    outline += "\n";
-                }
-
-                outline += $"{indentation}{sectionNumber} {section}\n";//\n
-
-
-            }
-
-            return outline;
-        }
-
-        static Tree<AgentTask> BuildAgentTaskTreeFromOutline(string globalPrompt, Outline outline, TreeNode<AgentTask> parent = null, Tree<AgentTask> currentTree = null)
-        {
-            Tree<AgentTask> tree = new Tree<AgentTask>(new AgentTask(globalPrompt, "ROOT", null));
-
-            if (currentTree != null)
-                tree = currentTree;
-
-            int index = 0;
-
-            List<string> contextHistory = null;
-            if (parent != null)
-                contextHistory = parent.Data.ContextHistory;
-
-            foreach(Section cursorSection in outline.sections)
-            {
-                TreeNode<AgentTask> sectionNode = tree.GetRoot();
-
-                sectionNode = tree.AddChild(sectionNode, new AgentTask(cursorSection.section_title, cursorSection.section_title, contextHistory, cursorSection.section_number, index));
-                TreeNode<AgentTask> nextLevel = null;
-                index++;
-
-                foreach(var subsection in cursorSection.subsections)
-                {
-                    nextLevel = tree.AddChild(sectionNode, new AgentTask(cursorSection.section_title, cursorSection.section_title, contextHistory, cursorSection.section_number, index));
-                    index++;
-                }
-            }
-
-            //if (currentTree != null)
-            //    tree = currentTree;
-
-            //string[] sections = outline.Split("\n\n");
-            //int index = 0;
-            //int maxDepthCurrentOutline = 0;
-
-            //foreach (string section in sections)
-            //{
-            //    TreeNode<AgentTask> sectionNode = tree.GetRoot();
-
-            //    if (parent != null)
-            //    {
-            //        sectionNode = parent;
-            //    }
-
-            //    string[] lines = section.Split('\n');
-
-            //    TreeNode<AgentTask> nextLevel = null;
-            //    int maxLevel = 0;
-            //    for (int i = 0; i < lines.Length; i++)
-            //    {
-            //        string trimmedLine = lines[i].Trim();
-            //        string[] parts = trimmedLine.Split(" ");
-            //        string[] levelParts = parts[0].Split('.');
-            //        List<int> sectionValueArray = new List<int>();
-
-            //        bool isNumber = int.TryParse(levelParts[0], out _);
-
-            //        if (!isNumber)
-            //            continue;
-
-            //        for (int j = 0; j < levelParts.Length; j++)
-            //        {
-            //            if (!string.IsNullOrEmpty(levelParts[j]) && isNumber)
-            //                sectionValueArray.Add(int.Parse(levelParts[j]));
-            //        }
-
-            //        //Get max tree depth
-            //        if(sectionValueArray.Count > maxDepthCurrentOutline)
-            //            maxDepthCurrentOutline = sectionValueArray.Count;
-
-            //        string title = trimmedLine.Replace(parts[0], string.Empty).Trim();
-
-            //        if (sectionValueArray.Count == 1)
-            //        {
-            //            sectionNode = tree.AddChild(sectionNode, new AgentTask(title, title, parts[0], index));
-            //            index++;
-            //        }
-            //        else
-            //        {
-            //            nextLevel = tree.AddChild(sectionNode, new AgentTask(title, title, parts[0], index));
-            //            sectionNode = nextLevel;
-
-            //            index++;
-            //        }
-
-            //    }
-            //}
-
-           
-            return tree;
-        }
-
-        static List<int> GetSectionNumberAsList(string sectionNumber)
-        {
-            List<int> sectionValueArray = new List<int>();
-            string trimmedLine = sectionNumber.Trim();
-            //string[] parts = trimmedLine.Split(" ");
-            string[] levelParts = trimmedLine.Split('.');
-
-
-            //bool isNumber = int.TryParse(levelParts[0], out _);
-
-            //if (!isNumber)
-            //    continue;
-
-            for (int j = 0; j < levelParts.Length; j++)
-            {
-                if (!string.IsNullOrEmpty(levelParts[j]))
-                    sectionValueArray.Add(int.Parse(levelParts[j]));
-            }
-
-            return sectionValueArray;
-        }
-
-        static Tree<AgentTask> ExtractTreeFromText(string input)
-        {
-            //string pattern = @"(?<indent>^|\n)(?<key>[A-Z]+[.]?[\d]*)[.]?\s(?<value>[^\n]+)";
-            //string pattern2 = @"(\d+).\s(.+?)(?=(\d+)|$)";
-            //string pattern3 = @"(?m)^\d+\. (.*?)(?=(\d+\.|\z))";
-            //string pattern4 = @"(\d+(?:\.\d+)*)\s+(.*)";
-            //string pattern5 = @"^(\s*)(\d+(?:\.\d+)*)\.\s*(.*)$";
-            string combinedPattern = @"(\d+).\s(.+?)(?=(\d+)|$)|(\d+(?:\.\d+)*)\s+(.*)";
-
-            MatchCollection? matched = null;
-            List<string> patterns = new List<string>();
-            patterns.Add(combinedPattern);
-            List<Match> matches = new List<Match>();
-
-            foreach (var cursor in patterns)
-            {
-                string[] lines = input.Split(new[] { Environment.NewLine, "\n" }, StringSplitOptions.RemoveEmptyEntries);
-
-                foreach (string line in lines)
-                {
-                    var match = Regex.Match(line, cursor, RegexOptions.Multiline);
-
-                    if (match.Success)
-                    {
-                        matches.Add(match);
-                    }
-                }
-            }
-
-            Tree<AgentTask> tree = new Tree<AgentTask>(new AgentTask(null, "ROOT", null));
-            TreeNode<AgentTask> currentNode = tree.GetRoot();
-            int currentIndentLevel = 0;
-            int currentLevel = 0;
-            Stack<TreeNode<AgentTask>> parentStack = new Stack<TreeNode<AgentTask>>();
-
-            foreach (Match cursor in matches)
-            {
-                string[] sectionInfo = cursor.Groups[0].Value.Split(' ');
-                string[] levelParts = sectionInfo[0].Split('.');
-                List<int> sectionValueArray = new List<int>();
-
-                for (int i = 0; i < levelParts.Length; i++)
-                {
-                    if (!string.IsNullOrEmpty(levelParts[i]))
-                        sectionValueArray.Add(int.Parse(levelParts[i]));
-                }
-
-                string title = cursor.Groups[0].Value.Replace(sectionInfo[0], string.Empty).Trim();
-
-                TreeNode<AgentTask> newNode = new TreeNode<AgentTask>(new AgentTask(null, title, null, sectionInfo[0]));
-
-                int level = sectionValueArray.Count;///2;
-                //string section = match.Groups[2].Value;
-                //string subsection = match.Groups[3].Value;
-
-                if (level > currentLevel)
-                {
-                    parentStack.Push(currentNode);
-                }
-                else if (level < currentLevel)
-                {
-                    while (currentLevel > level)
-                    {
-                        while (currentLevel > level)
-                        {
-                            currentNode = parentStack.Pop();
-                            currentLevel--;
-                        }
-                    }
-                }
-
-                //if (level == sectionSubsection[0])
-                //{
-                //    currentNode = new TreeNode<string>(section);
-                //    tree.AddChild(parentStack.Peek(), section);
-                //}
-
-                //if (level == sectionSubsection[1])
-                //{
-                //    currentNode = new TreeNode<string>(subsection);
-                //    tree.AddChild(parentStack.Peek(), subsection);
-                //}
-
-                if (!string.IsNullOrEmpty(title))
-                {
-                    currentNode = newNode;
-                    tree.AddChild(parentStack.Peek(), newNode.Data);
-                }
-
-                currentLevel = level;
-
-                //tree.AddChild(currentNode, newNode.Data);
-            }
-
-            return tree;
-        }
-
-        static Tree<string> BuildTreeFromOutline(string outline, TreeNode<string> parent = null, Tree<string> currentTree = null)
-        {
-            Tree<string> tree = new Tree<string>("Outline");
-
-            if (currentTree != null)
-                tree = currentTree;
-
-            string[] sections = outline.Split("\n\n");
-            foreach (string section in sections)
-            {
-                TreeNode<string> sectionNode = tree.GetRoot();
-
-                if (parent != null)
-                {
-                    sectionNode = parent;
-                }
-
-                string[] lines = section.Split('\n');
-
-                foreach (string line in lines)
-                {
-                    string trimmedLine = line.Trim();
-                    string[] parts = trimmedLine.Split(" ");
-                    string[] levelParts = parts[0].Split('.');
-                    List<int> sectionValueArray = new List<int>();
-
-                    for (int i = 0; i < levelParts.Length; i++)
-                    {
-                        if (!string.IsNullOrEmpty(levelParts[i]))
-                            sectionValueArray.Add(int.Parse(levelParts[i]));
-                    }
-
-                    string title = trimmedLine.Replace(parts[0], string.Empty).Trim();
-
-                    if (sectionValueArray.Count == 1)
-                    {
-
-                        sectionNode = tree.AddChild(sectionNode, title);
-                    }
-                    else
-                    {
-                        tree.AddChild(sectionNode, title);
-                    }
-
-                }
-            }
-
-            return tree;
-        }
-
-        static int GetIndentationLevel(string line)
-        {
-            int level = 0;
-            int index = 0;
-            while (index < line.Length && line[index] == ' ')
-            {
-                level++;
-                index++;
-            }
-
-            return level / 3; // Adjust level by dividing by 3 since each level has three spaces
-        }
-
-        static string GetContent(string line)
-        {
-            if (string.IsNullOrEmpty(line))
-            {
-                return null;
-            }
-
-            int startIndex = line.IndexOf('.') + 2; // Skip numbering and space
-            return line.Substring(startIndex).Trim();
-        }
-
         private static List<ChatExample> GetContainsRevisedPromptExamples()
         {
             List<ChatExample> result = new List<ChatExample>();
@@ -1053,16 +560,6 @@ namespace CollaborativeChatGPTLibrary.Classes
             //result.Add(new ChatExample() { Sample = "Thank you, I appreciate it! Have a great day!", Result = "true" });
 
             return result;
-        }
-
-        public string RemoveNumbersAndSpecialCharactersFromFront(string input)
-        {
-            int index = 0;
-            while (index < input.Length && (char.IsDigit(input[index]) || char.IsPunctuation(input[index]) || char.IsSymbol(input[index])))
-            {
-                index++;
-            }
-            return input.Substring(index);
         }
 
         public string CreateExpertPrompt(List<ConversationMessage> taskDescription, int numberOfRoles, int numberOfSkills)
@@ -1097,13 +594,13 @@ namespace CollaborativeChatGPTLibrary.Classes
             return result;
         }
 
-        public void InitializeAgent(string taskDescription, int numberOfRoles, int numberOfSkills)
+        public void InitializeAgent(string taskDescription, int expertNumberOfRoles, int expertNumberOfSkills)
         {
             conversationTexts = new Dictionary<RoleEnum, string>();
 
             agentTask = taskDescription;
-            ExpertRoleCount = numberOfRoles;
-            ExpertSkillCount = numberOfSkills;
+            ExpertRoleCount = expertNumberOfRoles;
+            ExpertSkillCount = expertNumberOfSkills;
             AgentConversations = new Dictionary<RoleEnum, Conversation>();
 
             //Initialize Expert Define agent
@@ -1111,7 +608,7 @@ namespace CollaborativeChatGPTLibrary.Classes
             {
                 if (string.IsNullOrEmpty(ExpertBasePrompt))
                 {
-                    ExpertBasePrompt = CreateExpertPrompt(taskDescription, numberOfRoles, numberOfSkills);
+                    ExpertBasePrompt = CreateExpertPrompt(taskDescription, expertNumberOfRoles, expertNumberOfSkills);
                 }
 
                 AgentConversations.Add(RoleEnum.ExpertDefine, api.Chat.CreateConversation(new ChatRequest() { Model = ChatGPTModelType }));
@@ -1139,23 +636,6 @@ namespace CollaborativeChatGPTLibrary.Classes
                 // give instruction as System
                 AgentConversations[RoleEnum.PromptGenerator].AppendSystemMessage(AgentPromptBase[PromptTypeEnum.PROMPT_GENERATOR].Value);
             }
-
-        }
-
-        public Task<string> PerformAgentStep(RoleEnum role, string? input)
-        {
-            // now let's ask it a question'
-            AgentConversations[role].AppendUserInput(input);
-
-            return AgentConversations[role].GetResponseFromChatbotAsync();
-        }
-
-        public float[] GetEmbedding(string text)
-        {
-            Task<float[]> response = api.Embeddings.GetEmbeddingsAsync(text);
-            response.Wait();
-
-            return response.Result;
 
         }
 
@@ -1229,19 +709,6 @@ namespace CollaborativeChatGPTLibrary.Classes
             return batches;
         }
 
-        public static List<List<TreeNode<AgentTask>>> CreateBatches(List<TreeNode<AgentTask>> children, int batchSize)
-        {
-            List<List<TreeNode<AgentTask>>> batches = new List<List<TreeNode<AgentTask>>>();
-
-            for (int i = 0; i < children.Count; i += batchSize)
-            {
-                List<TreeNode<AgentTask>> batch = children.Skip(i).Take(batchSize).ToList();
-                batches.Add(batch);
-            }
-
-            return batches;
-        }
-
         public void Save(string filePath)
         {
             using (FileStream fileStream = new FileStream(filePath, FileMode.Create))
@@ -1262,24 +729,6 @@ namespace CollaborativeChatGPTLibrary.Classes
             }
 
             return result;
-        }
-
-        public void SaveListToFile(List<AgentTask> list, string filePath)
-        {
-            using (FileStream fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                BinaryFormatter binaryFormatter = new BinaryFormatter();
-                binaryFormatter.Serialize(fileStream, list);
-            }
-        }
-
-        public List<AgentTask> LoadListFromFile(string filePath)
-        {
-            using (FileStream fileStream = new FileStream(filePath, FileMode.Open))
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-                return (List<AgentTask>)formatter.Deserialize(fileStream);
-            }
         }
 
         public string GetUserAction()
@@ -1322,7 +771,7 @@ namespace CollaborativeChatGPTLibrary.Classes
             return selectedAction;
         }
 
-
+        //Use in the future.  with perhaps lower version of chatgpt
         public bool IsSynonymOfDone(string input)
         {
 
@@ -1344,6 +793,7 @@ namespace CollaborativeChatGPTLibrary.Classes
             }
         }
 
+        //Use in the future.  with perhaps lower version of chatgpt
         public bool IsSynonymOfDelete(string input)
         {
 
@@ -1363,71 +813,6 @@ namespace CollaborativeChatGPTLibrary.Classes
             {
                 throw new InvalidOperationException("Invalid response from ChatGPT.");
             }
-        }
-
-        public int GetTaskStepCountEstimate(string prompt)
-        {
-            string combinedPrompt = AgentPromptBase[PromptTypeEnum.PROMPT_STEP_COUNT_ESTIMATE].Value.Replace("@TASK", prompt);
-
-            string chatResult = ExecuteSingleChatRequestWithConversation(null, combinedPrompt);
-
-            string[] rows = chatResult.Split('\n');
-            List<string> nonEmptyStrings = new List<string>();
-
-            for (int i = 0; i < rows.Length; i++)
-            {
-                if (!string.IsNullOrEmpty(rows[i]))
-                {
-                    nonEmptyStrings.Add(rows[i]);
-                }
-
-                //{number of actions}
-                if (rows[i].ToLower().Contains("{number of actions}") ||
-                    rows[i].ToLower().Contains("action count") ||
-                    rows[i].ToLower().Contains("action_count") ||
-                    rows[i].ToLower().Contains("number of actions"))//
-                {
-                    string[] splits = rows[i].Split('=');
-
-                    if (splits.Length > 1)
-                    {
-                        int? tempResult = ExtractNumber(splits[splits.Length - 1].Trim());
-                        int result = 0;
-
-                        if (tempResult.HasValue)
-                        {
-                            return tempResult.Value;
-                        }
-
-                        return result;
-                    }
-                }
-
-            }
-
-            //If we don't get a count then use the row count to estimate
-            if (nonEmptyStrings.Count > 0)
-                return nonEmptyStrings.Count;
-
-
-            return -1;
-        }
-
-        int? ExtractNumber(string input)
-        {
-            Regex regex = new Regex(@"\d+"); // Match one or more digits
-            Match match = regex.Match(input);
-
-            if (match.Success)
-            {
-                int number;
-                if (int.TryParse(match.Value, out number))
-                {
-                    return number;
-                }
-            }
-
-            return null;
         }
 
         public bool IsComplexPrompt(TreeNode<AgentTask> agentTask, int minActionThreshold, int mindependencyThreshold, int mincontingencyThreshold)
@@ -1621,98 +1006,7 @@ namespace CollaborativeChatGPTLibrary.Classes
             return null;
         }
 
-        public string ExecuteSingleChatRequest(string instruction, List<string> input, List<ChatExample> trainingExamples = null)
-        {
-            Conversation conversation = api.Chat.CreateConversation(new ChatRequest() { Model = ChatGPTModelType });
-
-            if (trainingExamples != null)
-            {
-                foreach (var example in trainingExamples)
-                {
-                    conversation.AppendUserInput(example.Sample);
-                    conversation.AppendExampleChatbotOutput(example.Result);
-                }
-            }
-
-            if (!string.IsNullOrEmpty(instruction))
-                conversation.AppendSystemMessage(instruction);
-
-            foreach (var item in input)
-            {
-                conversation.AppendUserInput(item);
-            }
-
-            int currentCount = 0;
-
-            while (true)
-            {
-                try
-                {
-                    Task<string> response = conversation.GetResponseFromChatbotAsync();
-                    response.Wait();
-
-                    if (response.Status == TaskStatus.RanToCompletion)
-                    {
-                        //HTTP status code: TooManyRequests
-                        string result = response.Result;
-
-                        UpdateOpenAPIUsage();
-                        Thread.Sleep(10000);
-                        return result;
-                    }
-                    else
-                    {
-
-                    }
-
-                }
-                catch (AggregateException ex)
-                {
-                    foreach (var innerException in ex.InnerExceptions)
-                    {
-                        if (innerException is TaskCanceledException)
-                        {
-                            Console.WriteLine("The task was canceled.");
-                            // Handle the canceled task error here
-                        }
-                        else
-                        {
-                            Console.WriteLine("Unhandled exception: " + innerException.Message);
-                        }
-                    }
-                }
-                catch (HttpRequestException e)
-                {
-                    Console.WriteLine("\nException Caught!");
-                    //Console.WriteLine("Message :{0} ", e.Message);
-
-                    if (e.Message.Contains("system overload")) // Replace this with the specific error message you're seeing
-                    {
-                        if (currentCount >= MAX_API_TRIES)
-                        {
-                            Console.WriteLine("System Overload occurred too many times throwing exception now");
-                            throw; // It's beyond our max try count
-                        }
-
-                        Console.WriteLine("System Overload. Waiting for 60 seconds before retrying.");
-                        Thread.Sleep(60000); // Wait for 60 seconds
-                    }
-                    else
-                    {
-                        throw; // If it's not a 'system overload' exception, rethrow it
-                    }
-
-                    currentCount++;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Unhandled exception: " + ex.Message);
-                }
-            }
-
-            return null;
-        }
-
+        
         private void UpdateOpenAPIUsage()
         {
             ApiCallCount++;
@@ -1827,19 +1121,5 @@ namespace CollaborativeChatGPTLibrary.Classes
             return null;
         }
 
-        //public float ComputeSpecificityScore(float relevanceScore, float completenessScore, float clarityScore, 
-        //    float consistencyScore, float accuracyScore)
-        //{
-        //    float relevanceWeight = .3f;
-        //    float completenessWeight = .2f;
-        //    float clarityWeight = .2f;
-        //    float consistencyWeight = .2f;
-        //    float accuracyWeight = .1f;
-
-        //    float result = (relevanceWeight * relevanceScore) + (completenessWeight * completenessScore) + 
-        //        (clarityWeight * clarityScore) + (consistencyWeight * consistencyScore) + (accuracyWeight * accuracyScore);
-
-        //    return result;
-        //}
     }
 }

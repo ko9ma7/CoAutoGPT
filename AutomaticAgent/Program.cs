@@ -10,25 +10,38 @@ using OpenAI_API.Moderation;
 using System.Reflection;
 using CollaborativeChatGPTLibrary.Classes;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Configuration;
 
 namespace AutomaticAgent
 {
     internal class Program
     {
-        private static string OPEN_AI_API_KEY = "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";
-        
+        private static IConfiguration _configuration;
+        private static string OPEN_AI_API_KEY = null;
+        private static string _saveFileName = "agent_state.dat";
+        private static string _taskDescription = "create a 5 recipe book with only 3 chapters that includes the following conditions: 1. Need no more than 20 minutes to prepare, 2. Are low calorie, 3. Easy to prepare, 4. Cost less than $20 per meal. 5. The recipes should be a fusion of chinese and japanese food.  6. Use standard animal proteins'";
+
         static void Main(string[] args)
         {
-            CheckMetaAgentTest();
+            var builder = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddUserSecrets<Program>();
+
+           _configuration = builder.Build();
+
+            // Now you can access your secrets
+            OPEN_AI_API_KEY = _configuration["OPENAPIKEY"];
+
+            RunAgent(_taskDescription);
         }
 
-        private static void CheckMetaAgentTest()
+        private static void RunAgent(string taskDescription)
         {
             ReflectiveAgent agent = new ReflectiveAgent(OPEN_AI_API_KEY, Model.ChatGPTTurbo0301);
             agent.MaxEnrichmentDepth = 3;
             bool endWork = false;
             bool loaded = false;
-            string saveFileName = "agent_state.dat";
             int executionModulus = 19;
             Console.ForegroundColor = ConsoleColor.White;
 
@@ -48,8 +61,8 @@ namespace AutomaticAgent
             //agent = MetaAgent.Load("agent_state.dat");
             //agent.ChatGPTModelType = Model.GPT4;
 
-            //1. Get problem Description.
-            string taskDescription = "create a 5 recipe book with only 3 chapters that includes the following conditions: 1. Need no more than 20 minutes to prepare, 2. Are low calorie, 3. Easy to prepare, 4. Cost less than $20 per meal. 5. The recipes should be a fusion of chinese and japanese food.  6. Use standard animal proteins'";
+            //1. Set problem Description.
+            
             //string taskDescription = "Im a seasoned programmer, I want to become a manager, can you recommend 5 linkedin courses for me";
             //string taskDescription = "what is the sum of 2 + 2";
             
@@ -167,7 +180,7 @@ namespace AutomaticAgent
                     //6. Update the Task Outline/Breakdown based on user input
                     ApplyTaskTreeUpdates(agent, agent.CurrentTask);
 
-                    endWork = RunPromptBatchs(agent, endWork, saveFileName, executionModulus, addedNodes);
+                    endWork = RunPromptBatchs(agent, endWork, _saveFileName, executionModulus, addedNodes);
                 }
 
                 Console.WriteLine();
@@ -202,7 +215,7 @@ namespace AutomaticAgent
             if (endWork)
             {
                 Console.ForegroundColor = ConsoleColor.White;
-                agent.Save(saveFileName);
+                agent.Save(_saveFileName);
                 Console.WriteLine("Exiting program, current state saved.");
                 Console.WriteLine("Press any key to close");
                 Console.ReadLine();

@@ -19,8 +19,7 @@ namespace AutomaticAgent
         private static IConfiguration _configuration;
         private static string OPEN_AI_API_KEY = null;
         private static string _saveFileName = "agent_state.dat";
-        private static string _taskDescription = "create a 5 recipe book with only 3 chapters that includes the following conditions: 1. Need no more than 20 minutes to prepare, 2. Are low calorie, 3. Easy to prepare, 4. Cost less than $20 per meal. 5. The recipes should be a fusion of chinese and japanese food.  6. Use standard animal proteins'";
-
+        
         static void Main(string[] args)
         {
             var builder = new ConfigurationBuilder()
@@ -33,7 +32,11 @@ namespace AutomaticAgent
             // Now you can access your secrets
             OPEN_AI_API_KEY = _configuration["OPENAPIKEY"];
 
-            RunAgent(_taskDescription);
+            string taskDescription = "create a 5 recipe book with only 3 chapters that includes the following conditions: 1. Need no more than 20 minutes to prepare, 2. Are low calorie, 3. Easy to prepare, 4. Cost less than $20 per meal. 5. The recipes should be a fusion of chinese and japanese food.  6. Use standard animal proteins'";
+            //string taskDescription = "Im a seasoned programmer, I want to become a manager, can you recommend 5 linkedin courses for me";
+            //string taskDescription = "what is the sum of 2 + 2";
+
+            RunAgent(taskDescription);
         }
 
         private static void RunAgent(string taskDescription)
@@ -41,121 +44,94 @@ namespace AutomaticAgent
             ReflectiveAgent agent = new ReflectiveAgent(OPEN_AI_API_KEY, Model.ChatGPTTurbo0301);
             agent.MaxEnrichmentDepth = 3;
             bool endWork = false;
-            bool loaded = false;
-            int executionModulus = 19;
+            //bool loaded = false;
+            int batchSize = 3;
+            bool userEndedProcess = false;
             Console.ForegroundColor = ConsoleColor.White;
 
-            //agent.Save("agent_state.dat");
-
-            //if (File.Exists("agent_state.dat"))
-            //{
-            //    MetaAgent agent2 = MetaAgent.Load(saveFileName);
-            //    agent2.InitializeOpenAIApi(OPEN_AI_API_KEY, Model.ChatGPTTurbo0301);
-            //    agent2.InitializeAgent(agent2.agentTask, agent2.ExpertRoleCount, agent2.ExpertSkillCount);
-
-            //    agent = agent2;
-            //    loaded = true;
-            //}
-
-
-            //agent = MetaAgent.Load("agent_state.dat");
-            //agent.ChatGPTModelType = Model.GPT4;
-
             //1. Set problem Description.
-            
-            //string taskDescription = "Im a seasoned programmer, I want to become a manager, can you recommend 5 linkedin courses for me";
-            //string taskDescription = "what is the sum of 2 + 2";
-            
             agent.AgentTaskTree = new Tree<AgentTask>(new AgentTask(taskDescription, "root", null));
             agent.CurrentTask = agent.AgentTaskTree.GetRoot();
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine("Initializing project expert...");
             agent.InitializeAgent(agent.CurrentTask.Data.Prompt, 3, 5);
             agent.CurrentTask.Data.ExpertPrompt = agent.ExpertBasePrompt;
-            //agent.Save(saveFileName);
 
-            //if (File.Exists(saveFileName) && false)//Disabled for now
-            //{
-            //    MetaAgent agent2 = MetaAgent.Load(saveFileName);
-            //    agent2.InitializeOpenAIApi(OPEN_AI_API_KEY, Model.ChatGPTTurbo0301);
-            //    agent = agent2;
-            //    loaded = true;
-            //}
+            if (File.Exists(_saveFileName))//Disabled for now
+            {
+                ReflectiveAgent agent2 = ReflectiveAgent.Load(_saveFileName);
+                agent2.InitializeOpenAIApi(OPEN_AI_API_KEY, Model.ChatGPTTurbo0301);
+                agent = agent2;
+                //loaded = true;
+            }
 
             while (true)
             {
-                //Check to see if we have an empty work stack
-                if (agent.CurrentTask == null)
-                    break;
-
-                if (loaded)
-                {
-                    //Continue to next not-root node to work on
-                    if (SetNextActiveTask(agent))
-                    {
-                        break;//Means we're done with work because no next not complete node available
-                    }
-                    loaded = false; //Reset the flag as we only need it at the start
-                }
-
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine("Current Task:");
-                Console.ForegroundColor = ConsoleColor.Gray;
-                string task = agent.CurrentTask.Data.Prompt;//For the root
-
-                if (!string.IsNullOrEmpty(agent.CurrentTask.Data.SectionNumber))
-                {
-                    task = agent.CurrentTask.Data.SectionNumber + " " + agent.CurrentTask.Data.Section;
-                }
-
-                Console.WriteLine(task);
-                Console.WriteLine();
-
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine("Determining Task Complexity");
-                bool isComplexTask = agent.IsComplexPrompt(agent.CurrentTask, 20, 3, 1);//25, 10, 5This is in the 95% range of successful single response range of GPT
+                bool isComplexTask = false;
                 List<string> enrichedPromptHistory = new List<string>();
 
-                if (isComplexTask)
+                if (!agent.UserShutdown)
                 {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("Task is considered complex, beginning prompt creation");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.WriteLine("Current Task:");
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    string task = agent.CurrentTask.Data.Prompt;//For the root
 
-                    //2. Create Top level role
-                    if (string.IsNullOrEmpty(agent.CurrentTask.Data.ExpertPrompt))
+                    if (!string.IsNullOrEmpty(agent.CurrentTask.Data.SectionNumber))
                     {
-                        Console.ForegroundColor = ConsoleColor.White;
-                        Console.WriteLine("Building Your Expert for the Task");
-                        agent.CurrentTask.Data.ExpertPrompt = agent.CreateExpertPrompt(agent.CurrentTask.Data.ConversationMessages, 2, 3);
-                        Console.WriteLine();
+                        task = agent.CurrentTask.Data.SectionNumber + " " + agent.CurrentTask.Data.Section;
                     }
 
-
-                    Console.WriteLine("Expert Definition:");
-                    Console.ForegroundColor = ConsoleColor.Gray;
-                    Console.WriteLine(agent.CurrentTask.Data.ExpertPrompt);
-                    //agent.CurrentTask.Data.ExpertPrompt = agent.ExpertSystemDefinition;
+                    Console.WriteLine(task);
                     Console.WriteLine();
 
-                    //3. Refine problem Requirements
-                    enrichedPromptHistory = agent.EnrichQuery(agent.CurrentTask, agent.MaxEnrichmentDepth);
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("Task is low complexity, generating response directly");
-                    agent.CurrentTask.Data.Result = agent.ExecuteSingleChatRequestInputList(agent.CurrentTask.Data.Result, null, agent.CurrentTask.Data.ConversationMessages);
-                    //agent.CurrentTask.Data.ConversationMessages.Add(new ConversationMessage() { Speaker = SpeakerEnum.assistant, Message = null });
-                    agent.CurrentTask.Data.IsComplete = true;
-                    //enrichedPromptHistory.Add(agent.CurrentTask.Data.Result);
-                    agent.CompletedTasks.Add(agent.CurrentTask.Data);
                     Console.ForegroundColor = ConsoleColor.White;
-                    Console.WriteLine("AI Result");
-                    Console.ForegroundColor = ConsoleColor.Gray;
-                    Console.WriteLine(agent.CurrentTask.Data.Result);
+                    Console.WriteLine("Determining Task Complexity");
+                    isComplexTask = agent.IsComplexPrompt(agent.CurrentTask, 20, 3, 1);//25, 10, 5This is in the 95% range of successful single response range of GPT
+                    
+
+
+                    if (isComplexTask)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("Task is considered complex, beginning prompt creation");
+
+                        //2. Create Top level role
+                        if (string.IsNullOrEmpty(agent.CurrentTask.Data.ExpertPrompt))
+                        {
+                            Console.ForegroundColor = ConsoleColor.White;
+                            Console.WriteLine("Building Your Expert for the Task");
+                            agent.CurrentTask.Data.ExpertPrompt = agent.CreateExpertPrompt(agent.CurrentTask.Data.ConversationMessages, 2, 3);
+                            Console.WriteLine();
+                        }
+
+
+                        Console.WriteLine("Expert Definition:");
+                        Console.ForegroundColor = ConsoleColor.Gray;
+                        Console.WriteLine(agent.CurrentTask.Data.ExpertPrompt);
+                        //agent.CurrentTask.Data.ExpertPrompt = agent.ExpertSystemDefinition;
+                        Console.WriteLine();
+
+                        //3. Refine problem Requirements
+                        enrichedPromptHistory = agent.EnrichQuery(agent.CurrentTask, agent.MaxEnrichmentDepth);
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("Task is low complexity, generating response directly");
+                        agent.CurrentTask.Data.Result = agent.ExecuteSingleChatRequestInputList(agent.CurrentTask.Data.Result, null, agent.CurrentTask.Data.ConversationMessages);
+                        //agent.CurrentTask.Data.ConversationMessages.Add(new ConversationMessage() { Speaker = SpeakerEnum.assistant, Message = null });
+                        agent.CurrentTask.Data.IsComplete = true;
+                        //enrichedPromptHistory.Add(agent.CurrentTask.Data.Result);
+                        agent.CompletedTasks.Add(agent.CurrentTask.Data);
+                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.WriteLine("AI Result");
+                        Console.ForegroundColor = ConsoleColor.Gray;
+                        Console.WriteLine(agent.CurrentTask.Data.Result);
+                    }
                 }
 
-                if (isComplexTask)
+                if (isComplexTask && !agent.UserShutdown)
                 {
                     //4. Breakdown the prompt into set of tasks that are stored in a data tree
                     Console.ForegroundColor = ConsoleColor.White;
@@ -180,7 +156,32 @@ namespace AutomaticAgent
                     //6. Update the Task Outline/Breakdown based on user input
                     ApplyTaskTreeUpdates(agent, agent.CurrentTask);
 
-                    endWork = RunPromptBatchs(agent, endWork, _saveFileName, executionModulus, addedNodes);
+                    List<TreeNode<AgentTask>> newNodeValues = agent.GetNodesById(new List<Guid>(addedNodes.Keys), agent.CurrentTask);
+
+                    endWork = RunPromptBatchs(agent, endWork, _saveFileName, batchSize, newNodeValues);
+
+                    //Flag if user stopped work
+                    if (endWork)
+                    {
+                        userEndedProcess = true;
+                    }
+                }
+                else if (agent.UserShutdown)
+                {
+                    agent.UserShutdown = false;
+
+                    //if (SetNextActiveTask(agent))
+                    //{
+                    //    break;//Means we're done with work because no next not complete node available
+                    //}
+
+                    endWork = RunPromptBatchs(agent, endWork, _saveFileName, batchSize, agent.GetIncompleteTasks(agent.CurrentTask));
+
+                    //Flag if user stopped work
+                    if (endWork)
+                    {
+                        userEndedProcess = true;
+                    }
                 }
 
                 Console.WriteLine();
@@ -214,6 +215,7 @@ namespace AutomaticAgent
 
             if (endWork)
             {
+                agent.UserShutdown = userEndedProcess;
                 Console.ForegroundColor = ConsoleColor.White;
                 agent.Save(_saveFileName);
                 Console.WriteLine("Exiting program, current state saved.");
@@ -253,7 +255,7 @@ namespace AutomaticAgent
 
         }
 
-        private static bool RunPromptBatchs(ReflectiveAgent agent, bool endWork, string saveFileName, int executionModulus, Dictionary<Guid, TreeNode<AgentTask>> addedNodes)
+        private static bool RunPromptBatchs(ReflectiveAgent agent, bool endWork, string saveFileName, int executionModulus, List<TreeNode<AgentTask>> newNodeValues)
         {
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.White;
@@ -261,8 +263,6 @@ namespace AutomaticAgent
             Console.WriteLine();
 
             //7. Execute Tasks
-            List<TreeNode<AgentTask>> newNodeValues = agent.GetNodesById(new List<Guid>(addedNodes.Keys), agent.CurrentTask);
-
             List<List<int>> batches = ReflectiveAgent.CreateBatches(newNodeValues.Count, executionModulus);
 
             foreach (var batch in batches)

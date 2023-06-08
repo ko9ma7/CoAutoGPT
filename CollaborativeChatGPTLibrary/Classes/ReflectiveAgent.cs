@@ -52,6 +52,8 @@ namespace CollaborativeChatGPTLibrary.Classes
         //Future feature
         string criticDefinition = "";
 
+        public bool UserShutdown { get; set; }
+
         public int ApiCallCount { get; set; }
 
         public List<APICallEvent> OpenAIApiCallCount { get; set; } = new List<APICallEvent>();
@@ -146,7 +148,7 @@ namespace CollaborativeChatGPTLibrary.Classes
 
             AgentPromptBase.Add(PromptTypeEnum.IS_DELETE_STATEMENT, new Prompt()
             {
-                Description = "Is responsible for analyzing text and returning 'yes' or 'no' if it is indicating to remove",
+                Description = "Is responsible for analyzing text and returning 'yes' or 'no' if it is indicating to delete",
                 Name = PromptTypeEnum.IS_DELETE_STATEMENT.ToString(),
                 Value = isRemovalText
             });
@@ -167,11 +169,37 @@ namespace CollaborativeChatGPTLibrary.Classes
 
             AgentPromptBase.Add(PromptTypeEnum.IS_DONE, new Prompt()
             {
-                Description = "Is responsible for analyzing a prompt and estimate the number of steps required to complete",
+                Description = "Is responsible for analyzing a prompt and indicating if the process is done",
                 Name = PromptTypeEnum.IS_DONE.ToString(),
                 Value = isDoneText
             });
 
+        }
+
+        public List<TreeNode<AgentTask>> GetUnfinishedNodes(TreeNode<AgentTask> parent)
+        {
+            List<TreeNode<AgentTask>> result = new List<TreeNode<AgentTask>>();
+
+            List<TreeNode<AgentTask>> allNodes = AgentTaskTree.GetAllNodes(parent);
+
+            foreach(var cursor in allNodes)
+            {
+                if (!cursor.Data.IsComplete)
+                {
+                    result.Add(cursor);
+                }
+            }
+
+            return result;
+        }
+
+        public void InitializeOpenAIApi(string openAiApiKey, Model model)
+        {
+            api = new OpenAIAPI(openAiApiKey);
+
+            ChatGPTModelType = model;
+
+            AgentConversations = new Dictionary<RoleEnum, Conversation>();
         }
 
         public bool AllTasksComplete()

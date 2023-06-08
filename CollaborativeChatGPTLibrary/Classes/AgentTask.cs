@@ -49,6 +49,7 @@ namespace CollaborativeChatGPTLibrary.Classes
 
         public Guid Id { get; set; } = Guid.NewGuid();
 
+
         public int MaxContextWindowSize { get; set; } = 20;
 
         public string SectionUpdate { get; set; }

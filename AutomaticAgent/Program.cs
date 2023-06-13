@@ -44,7 +44,6 @@ namespace AutomaticAgent
             ReflectiveAgent agent = new ReflectiveAgent(OPEN_AI_API_KEY, Model.ChatGPTTurbo0301);
             agent.MaxEnrichmentDepth = 3;
             bool endWork = false;
-            //bool loaded = false;
             int batchSize = 3;
             bool userEndedProcess = false;
             Console.ForegroundColor = ConsoleColor.White;
@@ -57,12 +56,11 @@ namespace AutomaticAgent
             agent.InitializeAgent(agent.CurrentTask.Data.Prompt, 3, 5);
             agent.CurrentTask.Data.ExpertPrompt = agent.ExpertBasePrompt;
 
-            if (File.Exists(_saveFileName))//Disabled for now
+            if (File.Exists(_saveFileName) && false)//Disabled for now
             {
                 ReflectiveAgent agent2 = ReflectiveAgent.Load(_saveFileName);
                 agent2.InitializeOpenAIApi(OPEN_AI_API_KEY, Model.ChatGPTTurbo0301);
                 agent = agent2;
-                //loaded = true;
             }
 
             while (true)
@@ -109,7 +107,6 @@ namespace AutomaticAgent
                         Console.WriteLine("Expert Definition:");
                         Console.ForegroundColor = ConsoleColor.Gray;
                         Console.WriteLine(agent.CurrentTask.Data.ExpertPrompt);
-                        //agent.CurrentTask.Data.ExpertPrompt = agent.ExpertSystemDefinition;
                         Console.WriteLine();
 
                         //3. Refine problem Requirements
@@ -122,7 +119,6 @@ namespace AutomaticAgent
                         agent.CurrentTask.Data.Result = agent.ExecuteSingleChatRequestInputList(agent.CurrentTask.Data.Result, null, agent.CurrentTask.Data.ConversationMessages);
                         //agent.CurrentTask.Data.ConversationMessages.Add(new ConversationMessage() { Speaker = SpeakerEnum.assistant, Message = null });
                         agent.CurrentTask.Data.IsComplete = true;
-                        //enrichedPromptHistory.Add(agent.CurrentTask.Data.Result);
                         agent.CompletedTasks.Add(agent.CurrentTask.Data);
                         Console.ForegroundColor = ConsoleColor.White;
                         Console.WriteLine("AI Result");
@@ -158,6 +154,7 @@ namespace AutomaticAgent
 
                     List<TreeNode<AgentTask>> newNodeValues = agent.GetNodesById(new List<Guid>(addedNodes.Keys), agent.CurrentTask);
 
+                    Console.WriteLine();
                     endWork = RunPromptBatchs(agent, endWork, _saveFileName, batchSize, newNodeValues);
 
                     //Flag if user stopped work
@@ -169,11 +166,6 @@ namespace AutomaticAgent
                 else if (agent.UserShutdown)
                 {
                     agent.UserShutdown = false;
-
-                    //if (SetNextActiveTask(agent))
-                    //{
-                    //    break;//Means we're done with work because no next not complete node available
-                    //}
 
                     endWork = RunPromptBatchs(agent, endWork, _saveFileName, batchSize, agent.GetIncompleteTasks(agent.CurrentTask));
 
